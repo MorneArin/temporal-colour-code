@@ -1,43 +1,50 @@
-# Temporal-colour code
+# Temporal-Colour Code — All-LUTs Fiji Macros
 
-Python script for colour-coding microscopy time-lapse data by time.
+Fiji/ImageJ macros that batch-run temporal colour coding on a time-lapse
+z-stack: each frame is tinted according to its position in time (early
+frames at one end of a lookup table, late frames at the other) and merged
+into a single projection, so the result shows *where* and *when* signal
+appeared in the sequence — in the style of Fiji's *Temporal-Color Code*
+plugin (Kota Miura, EMBL Heidelberg).
 
-Each frame of a time series is assigned a colour from a chosen colourmap according to its position in the sequence (early frames at one end of the map, late frames at the other), and the coloured frames are merged into a single projection. The result shows in one image where and when signal appeared, in the same spirit as Fiji's *Temporal-Color Code* plugin.
+Rather than running the plugin once per LUT by hand, these macros embed its
+core colour-coding logic directly and loop it over every LUT in its dialog
+(49 in total), saving one PNG per LUT and closing each result as it goes.
+The calibration/colour-scale bar is disabled for every run.
+
+## Scripts
+
+- **`TemporalColorCode_AllLUTs.ijm`** — processes the active z-stack as-is.
+- **`TemporalColorCode_AllLUTs_Reversed.ijm`** — same, but first duplicates
+  the stack and reverses its slice/frame order, so the colour mapping runs
+  from the last frame to the first instead. Output filenames get a
+  `_reversed` suffix. The original stack is never modified in either script.
 
 ## Requirements
 
-- Python 3.10 or later
-- numpy
-- tifffile (reading and writing TIFF stacks)
-- matplotlib (colourmaps)
-
-Install with:
-
-```
-pip install numpy tifffile matplotlib
-```
+- Fiji (ImageJ), with a single-channel z-stack or time series already open.
 
 ## Usage
 
-```
-python temporal_colour_code.py input_stack.tif -o output.tif --cmap viridis
-```
-
-Options:
-
-- `-o`, `--output` — path for the merged RGB image (default: `<input>_tcc.tif`)
-- `--cmap` — any matplotlib colourmap name, e.g. `viridis`, `plasma`, `jet`
-- `--start`, `--end` — restrict to a frame range
-- `--legend` — also save a colour bar mapping colour to frame number / time
-
-## Input
-
-A single-channel TIFF stack ordered as (T, Y, X). Multi-channel or Z-stack data should be reduced to one channel and one plane (or a projection) first.
+1. Open your stack in Fiji and make sure its window is active.
+2. **File > New > Script...**, set the language to **IJM**, paste in the
+   contents of the macro, and click **Run** (or **Plugins > New > Macro**).
+3. When prompted, choose the folder to save the PNGs into.
+4. The macro loops over all 49 LUTs, saving `<LUT name>.png` (or
+   `<LUT name>_reversed.png`) for each into that folder, then closes the
+   result window before moving to the next LUT.
 
 ## Output
 
-An RGB TIFF of the same X–Y size as the input, plus an optional legend image.
+One RGB PNG per LUT, same width/height as the source stack, with no colour
+scale bar. The original stack window stays open throughout and is left
+untouched.
 
-## Status
+## Notes
 
-Early development. Interface and options above describe the intended behaviour and may change.
+- Projection method defaults to `MAX` intensity over the full frame range
+  (matching the plugin's own defaults); `SUM` and `WeightedSUM` are
+  supported by the underlying logic but not exposed as a loop option here.
+- Written against an older ImageJ macro interpreter without `try`/`catch`
+  support — if a single LUT fails, the whole run stops rather than skipping
+  it.
